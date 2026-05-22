@@ -48,7 +48,7 @@ async def test_resolve_winning_trade(tmp_path: Path):
     ts = store.write_snapshot([], {}, [])
     # Paper-bet YES at 0.40, market resolves YES -> win
     s = _score("cid1", "YES", 0.40)
-    store.log_paper_trades(ts, [s], notional=100.0)
+    store.log_paper_trades(ts, [s], notional_by_cid={"cid1": 100.0})
 
     client = AsyncMock()
     client.fetch_markets_by_condition_ids = AsyncMock(
@@ -71,7 +71,7 @@ async def test_resolve_losing_trade(tmp_path: Path):
     store = Storage(tmp_path / "test.db")
     ts = store.write_snapshot([], {}, [])
     s = _score("cid1", "NO", 0.40)  # paper-bet NO; if YES wins we lose
-    store.log_paper_trades(ts, [s], notional=100.0)
+    store.log_paper_trades(ts, [s], notional_by_cid={"cid1": 100.0})
 
     client = AsyncMock()
     client.fetch_markets_by_condition_ids = AsyncMock(
@@ -87,7 +87,7 @@ async def test_resolve_skips_unresolved(tmp_path: Path):
     store = Storage(tmp_path / "test.db")
     ts = store.write_snapshot([], {}, [])
     s = _score("cid1", "YES", 0.40)
-    store.log_paper_trades(ts, [s], notional=100.0)
+    store.log_paper_trades(ts, [s], notional_by_cid={"cid1": 100.0})
 
     client = AsyncMock()
     client.fetch_markets_by_condition_ids = AsyncMock(

@@ -33,7 +33,13 @@ def _final_take(s: MarketScore, rec: BetRecommendation | None, research: Researc
     """Build a one-paragraph plain-English verdict combining signal + research."""
     bits: list[str] = []
     if rec is None:
-        bits.append("No actionable bet (Kelly says skip).")
+        # No actionable bet, but we still log the prediction direction so we
+        # can score smart-money accuracy at end of week.
+        bits.append(
+            f"**Prediction: {s.consensus_side}** (smart money consensus from "
+            f"{s.n_traders} top traders). No bet — market already prices this "
+            f"direction, so no edge. Tracking outcome for accuracy stats."
+        )
     else:
         win_str = f"{rec.p_blended:.0%}"
         bits.append(

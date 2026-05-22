@@ -92,15 +92,20 @@ async def resolve_paper_trades(db_path, client: PolymarketClient) -> ResolutionR
         side = r["side"]
         entry = float(r["entry_price"])
         notional = float(r["notional_usd"])
-        shares = notional / entry if entry > 0 else 0.0
+        # Tally win/loss whether or not we actually bet (notional may be 0 for
+        # prediction-only rows where Kelly said skip). Wins/losses come from
+        # signal direction, P&L only accrues when notional > 0.
         if side == winner:
-            payout = shares * 1.0
-            payout_after_fee = notional + (payout - notional) * (1.0 - TAKER_FEE)
-            pnl = payout_after_fee - notional
             n_wins += 1
+            if notional > 0:
+                shares = notional / entry if entry > 0 else 0.0
+                payout = shares * 1.0
+                pnl = (payout - notional) * (1.0 - TAKER_FEE)
+            else:
+                pnl = 0.0
         else:
-            pnl = -notional
             n_losses += 1
+            pnl = -notional  # 0 if we didn't bet
         total_pnl += pnl
         updates.append((winner, pnl, now_iso, r["id"]))
 

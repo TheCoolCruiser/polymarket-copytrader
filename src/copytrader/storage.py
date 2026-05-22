@@ -165,14 +165,27 @@ class Storage:
         return snapshot_ts
 
     def log_paper_trades(
-        self, snapshot_ts: str, scores: Iterable[MarketScore], notional: float = 100.0
+        self,
+        snapshot_ts: str,
+        scores: Iterable[MarketScore],
+        notional_by_cid: dict[str, float] | None = None,
     ) -> int:
-        """Log paper trades for every edge-flagged market in this snapshot."""
+        """Log a row for every scored market in this snapshot.
+
+        - notional_usd > 0 when Kelly produced an actionable bet (edge candidate)
+        - notional_usd = 0 means "prediction logged, no bet placed"
+
+        Either way, side = consensus_side and we'll compare against the resolved
+        outcome later — giving us a smart-money win-rate stat across the whole
+        sample, not just the subset where we'd have bet.
+        """
+        notional_by_cid = notional_by_cid or {}
         rows = []
         for s in scores:
-            if not s.has_edge or s.yes_price is None:
+            if s.yes_price is None:
                 continue
             entry_price = s.yes_price if s.consensus_side == "YES" else 1.0 - s.yes_price
+            notional = notional_by_cid.get(s.condition_id, 0.0)
             rows.append((
                 snapshot_ts, s.condition_id, s.consensus_side,
                 entry_price, s.score, notional, s.end_date,

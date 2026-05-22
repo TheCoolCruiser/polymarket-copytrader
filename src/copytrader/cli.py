@@ -201,8 +201,14 @@ async def _do_snapshot(
         store = storage.Storage(cfg.db_path)
         ts = store.write_snapshot(traders, positions_by_wallet, scored)
         if persist_paper:
-            n = store.log_paper_trades(ts, edge)
-            console.print(f"Wrote snapshot {ts} (logged {n} paper trades).")
+            notional_by_cid = {cid: r.bet_size_usd for cid, r in recs.items()}
+            # Log a prediction row for EVERY scored market — gives us a smart-money
+            # win-rate stat across the whole sample, not just where we'd have bet.
+            n = store.log_paper_trades(ts, scored, notional_by_cid=notional_by_cid)
+            n_actionable = sum(1 for v in notional_by_cid.values() if v > 0)
+            console.print(
+                f"Wrote snapshot {ts} (logged {n} predictions, {n_actionable} with active bets)."
+            )
         else:
             console.print(f"Wrote snapshot {ts}.")
 
