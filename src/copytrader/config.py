@@ -61,7 +61,7 @@ def load() -> Config:
         min_consensus_score=_env_float("MIN_CONSENSUS_SCORE", 0.15),
         min_market_volume_usd=_env_float("MIN_MARKET_VOLUME_USD", 10000),
         min_minutes_to_resolution=_env_int("MIN_MINUTES_TO_RESOLUTION", 60),
-        max_days_to_resolution=_env_int("MAX_DAYS_TO_RESOLUTION", 90),
+        max_days_to_resolution=_env_int("MAX_DAYS_TO_RESOLUTION", 7),
         edge_threshold=_env_float("EDGE_THRESHOLD", 0.08),
         bankroll_usd=_env_float("BANKROLL_USD", 1000.0),
         kelly_fraction=_env_float("KELLY_FRACTION", 0.25),
