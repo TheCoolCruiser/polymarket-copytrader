@@ -39,6 +39,7 @@ jobs:
           KELLY_FRACTION: '0.25'
           MAX_BET_PCT: '0.05'
           DAILY_EXPOSURE_CAP: '0.20'
+          MAX_DAYS_TO_RESOLUTION: '90'
         run: |
           python -m copytrader.cli snapshot --notify
 

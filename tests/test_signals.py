@@ -14,6 +14,7 @@ def _cfg(**overrides) -> Config:
         top_n_traders=50, time_period="MONTH", order_by="PNL",
         min_traders_per_market=2, min_consensus_score=0.0,
         min_market_volume_usd=0.0, min_minutes_to_resolution=0,
+        max_days_to_resolution=100000,
         edge_threshold=0.05,
         bankroll_usd=1000.0, kelly_fraction=0.25, max_bet_pct=0.05,
         daily_exposure_cap=0.20,

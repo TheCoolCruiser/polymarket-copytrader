@@ -117,8 +117,11 @@ def score(
             if market.volume_num < cfg.min_market_volume_usd:
                 continue
             mins = minutes_to_resolution(market, now=now)
-            if mins is not None and mins < cfg.min_minutes_to_resolution:
-                continue
+            if mins is not None:
+                if mins < cfg.min_minutes_to_resolution:
+                    continue
+                if mins > cfg.max_days_to_resolution * 24 * 60:
+                    continue
             yes_price = _parse_outcome_price(market)
             # Skip markets whose price is pinned at the edge — gamma sometimes
             # leaves active=true on already-resolved markets, and a price like
