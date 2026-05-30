@@ -134,22 +134,31 @@ class PolymarketClient:
         return GammaMarket.model_validate(raw[0])
 
     async def fetch_markets_by_condition_ids(
-        self, condition_ids: list[str], *, batch_size: int = 30
+        self,
+        condition_ids: list[str],
+        *,
+        batch_size: int = 30,
+        include_closed: bool = False,
     ) -> dict[str, GammaMarket]:
-        """Batch-fetch gamma markets. Gamma accepts repeated condition_ids params."""
+        """Batch-fetch gamma markets. Gamma defaults to closed=false, so we
+        explicitly query open then closed (when include_closed=True) and merge.
+        """
         out: dict[str, GammaMarket] = {}
-        for i in range(0, len(condition_ids), batch_size):
-            chunk = condition_ids[i : i + batch_size]
-            # httpx serializes list values as repeated params, which Gamma accepts.
-            raw = await self._get(
-                f"{self._cfg.gamma_api}/markets",
-                params=[("condition_ids", c) for c in chunk] + [("limit", str(len(chunk)))],
-            )
-            for r in raw:
-                try:
-                    m = GammaMarket.model_validate(r)
-                    if m.condition_id:
-                        out[m.condition_id] = m
-                except Exception as e:
-                    log.warning("failed to parse gamma market: %s", e)
+        closed_filters: list[str | None] = ["false"]
+        if include_closed:
+            closed_filters.append("true")
+        for closed in closed_filters:
+            for i in range(0, len(condition_ids), batch_size):
+                chunk = condition_ids[i : i + batch_size]
+                params = [("condition_ids", c) for c in chunk] + [("limit", str(len(chunk)))]
+                if closed is not None:
+                    params.append(("closed", closed))
+                raw = await self._get(f"{self._cfg.gamma_api}/markets", params=params)
+                for r in raw:
+                    try:
+                        m = GammaMarket.model_validate(r)
+                        if m.condition_id and m.condition_id not in out:
+                            out[m.condition_id] = m
+                    except Exception as e:
+                        log.warning("failed to parse gamma market: %s", e)
         return out

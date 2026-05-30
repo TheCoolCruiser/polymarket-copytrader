@@ -25,6 +25,17 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Restore SQLite DB from previous run
+        uses: actions/cache/restore@v4
+        with:
+          path: data/copytrader.db
+          # New cache key per run; restore-keys pulls the most recent
+          # `db-` cache, giving us mutable state across runs without
+          # bloating the repo.
+          key: db-${{ github.run_id }}
+          restore-keys: |
+            db-
+
       - name: Install claude CLI (for auto-research)
         run: npm install -g @anthropic-ai/claude-code
 
@@ -54,18 +65,22 @@ jobs:
         run: |
           python -m copytrader.cli export-csv --out data/predictions.csv
 
-      - name: Commit results back to repo
+      - name: Save SQLite DB to cache
+        uses: actions/cache/save@v4
+        with:
+          path: data/copytrader.db
+          key: db-${{ github.run_id }}
+
+      - name: Commit CSV back to repo
         run: |
           git config user.name "copytrader-bot"
           git config user.email "bot@copytrader.local"
-          git add data/predictions.csv data/copytrader.db || true
+          git add data/predictions.csv
           if git diff --cached --quiet; then
             echo "No changes to commit"
             exit 0
           fi
           git commit -m "daily: snapshot $(date -u +%Y-%m-%d)"
-          # Rebase onto remote in case main moved while we were running
-          # (handles concurrent manual triggers + scheduled runs). Retry once.
           for attempt in 1 2 3; do
             git pull --rebase origin main || true
             if git push; then

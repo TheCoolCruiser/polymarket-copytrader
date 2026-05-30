@@ -75,7 +75,7 @@ async def resolve_paper_trades(db_path, client: PolymarketClient) -> ResolutionR
         return ResolutionResult(0, 0, 0.0, 0, 0)
 
     cids = list({r["condition_id"] for r in rows})
-    markets = await client.fetch_markets_by_condition_ids(cids)
+    markets = await client.fetch_markets_by_condition_ids(cids, include_closed=True)
 
     updates = []
     total_pnl = 0.0
