@@ -1,10 +1,13 @@
 name: daily-snapshot
 
+# Schedule disabled 2026-06-08 — see README post-mortem.
+# Smart-money copy-trade signal failed to validate after 45 resolved markets:
+# 51.1% overall win rate (CI [37%, 65%], no edge vs coin flip) and 14.3% on
+# the supposedly high-conviction edge subset (-43% paper ROI on $645 notional).
+# Kept workflow_dispatch so the system can still be triggered manually for
+# follow-up tests, but no recurring runs.
 on:
-  schedule:
-    # 14:00 UTC = 10:00 AM ET. Adjust to taste.
-    - cron: '0 14 * * *'
-  workflow_dispatch: {}  # allow manual triggering from the Actions tab
+  workflow_dispatch: {}
 
 permissions:
   contents: write  # so we can commit predictions.csv + DB back to the repo

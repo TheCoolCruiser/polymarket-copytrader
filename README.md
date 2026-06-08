@@ -1,5 +1,9 @@
 # polymarket-copytrader
 
+> **Status: experiment concluded 2026-06-08. Signal does not validate.**
+> See [Post-mortem](#post-mortem) below for the result. Daily cron is disabled;
+> `workflow_dispatch` still works if you want to revive it for a follow-up.
+
 Polymarket "smart money" signal generator. Fetches the top-N traders by month-PnL,
 parallel-fetches their open positions, and scores each market by rank-weighted,
 portfolio-normalized consensus. Flags markets where smart money disagrees with the
@@ -7,6 +11,67 @@ current market price ("edge candidates"). Sends rich Discord embeds. Optional
 Kalshi cross-venue matching for US-legal betting.
 
 This is a **research tool**. It does not place real orders.
+
+## Post-mortem
+
+**Hypothesis:** Following the open positions of Polymarket's top monthly P&L
+leaders should produce a positive-EV signal. The strongest version: markets
+where the rank-weighted consensus *disagrees* with the current market price
+("edge candidates") should over-perform.
+
+**Methodology:** Daily snapshot of top 50 traders across 9 categories
+(deduped to ~370 unique wallets). Score every market they hold by
+rank-weighted, portfolio-normalized consensus. Filter to markets resolving
+within 7 days. Discord digest with bet recommendations sized by fractional
+Kelly. Forward paper-trade every recommendation; resolve outcomes against
+Polymarket's settled market state.
+
+**Result over 45 unique resolved markets (May 22 → Jun 8, 2026):**
+
+| Subset | Win rate | Sample |
+|---|---|---|
+| All predictions | 51.1% | 23 W / 22 L (Wilson 95% CI [37%, 65%]) |
+| Edge candidates only | 14.3% | 2 W / 12 L |
+| Paper-trade ROI | -43.2% | -$279 P&L on $645 notional |
+
+**Conclusion:** The signal does not produce edge. Overall accuracy is
+statistically indistinguishable from coin-flip. The high-conviction subset
+(where smart money disagreed most strongly with market price) performed
+*substantially worse* than random — exactly the opposite of what the
+hypothesis predicted.
+
+**Likely reasons it failed:**
+
+1. **Base-rate confound.** Most "wins" were "predicted NO on far-out
+   binary events" markets where the base rate strongly favors NO regardless of
+   smart-money input. Strip those out and the directional accuracy on
+   genuinely 50/50 short-horizon calls is worse than coin-flip.
+2. **Stale-position bias.** Top traders' open positions on short-window
+   sports markets are often *losing trades they haven't closed yet*. Copying
+   their portfolio = copying their stuck money, not their conviction.
+3. **Adverse selection on edge candidates.** When 19+ top traders pile into
+   one side at a contrarian price, that price exists because other informed
+   bettors are on the opposite side. The market price is doing its job.
+4. **No durable retail-visible edge.** Polymarket's leaderboard is public; any
+   real edge would already be arbitraged away.
+
+**No money was lost** — paper trading only. Costs were tokens for the
+auto-research step (~$0 since it ran on a Claude Pro subscription) and zero
+real betting was placed.
+
+**Lessons for anyone repeating this:**
+- Compute base rates for "Will X happen by date" markets separately and
+  exclude them from the accuracy calc — they make any directional signal
+  look better than it is.
+- Don't trust open-position snapshots as a conviction signal for
+  short-horizon markets. Use the `/user/trades` endpoint to filter to
+  recently-opened positions only.
+- Edge-candidate filters that look principled (rank-weighted, Kelly-sized)
+  can still produce systematically bad picks if the underlying signal has
+  adverse selection. Validate with paper trading before risking real money.
+
+The CSV at [data/predictions.csv](data/predictions.csv) is the full record
+of every prediction made and every resolved outcome.
 
 ## Why not just bet on Polymarket?
 
